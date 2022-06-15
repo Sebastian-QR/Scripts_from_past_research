@@ -1,0 +1,51 @@
+//Ask the user to select the source directory - tiff stacks from batch conversion
+dir = getDirectory("Select input directory");
+
+//Ask the user to select the destination directory - where to save images  and results
+dir2 = getDirectory("Select output");
+
+//generate a list of the files in the selected directory
+//open split to single channel images and save
+list = getFileList(dir);
+Array.sort(list);
+for (i=0; i<list.length; i++) {
+	filename = dir + list[i];
+	open(filename);
+	nameStore = getTitle();
+newname = substring(nameStore, 0, lengthOf(nameStore)-4);	
+selectWindow(nameStore);
+makeLine(50, 871, 250, 871);
+//calibrates pixels and distance
+run("Set Scale...", "known=200 unit=micron");
+run("ROI Manager...");
+//ask the user to draw ROI and sends it to Manager
+waitForUser("Create ROI and click OK");
+roiManager("Add");
+roiManager("Select", 0);
+run("Measure");
+//Transform the image into 16-bit to substract background, transform into binary and fill holes and watershed
+run("16-bit");
+run("Subtract Background...", "rolling=10 light disable");
+//Note: threshold is to be defined before running the macro
+waitForUser("set threshold and click OK");
+run("Make Binary");
+run("Fill Holes");
+run("Convert to Mask");
+run("Watershed");
+roiManager("Select", 0);
+setBackgroundColor(0, 0, 0);
+//Clears outside of ROI and saves ROI to file
+run("Duplicate...", "title=nameStore+(ROI).tif]");
+saveAs("Tiff", dir2+newname+"(ROI).tif");
+run("Make Binary");
+run("Analyze Particles...", "size=15-Infinity show=Masks display exclude summarize add");
+//Saves Mask of ROI to file
+selectWindow("Mask of "+newname+"(ROI).tif");
+saveAs("Tiff", dir2+newname+"(ROI-Mask).tif");
+//Close everything but the Summary display
+close(nameStore);
+close(newname+"(ROI).tif");
+close(newname+"(ROI-Mask).tif");
+selectWindow("ROI Manager");
+run("Close");
+}

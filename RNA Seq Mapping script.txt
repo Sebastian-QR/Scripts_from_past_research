@@ -1,0 +1,32 @@
+###Create genome index using STAR
+
+STAR --runThreadN 16 \
+     --runMode genomeGenerate \
+     --genomeDir ~/RNASeqSQ/GenomeDir/ \
+     --genomeFastaFiles ~/RNASeqSQ/ref_genome/Sheep_genome.fna \
+     --sjdbGTFfile ~/RNASeqSQ/ref_genome/Sheep_genome_annotations.gff \
+     --sjdbOverhang 49 \
+     --sjdbGTFtagExonParentTranscript Parent
+
+###Map files to genome (loop)
+
+module load STAR
+
+fqFiles=`find $1 -name '*.gz' -type f`
+
+for fqFile in $fqFiles;do
+  STAR --runThreadN 16 \
+       --genomeDir ~/RNASeqSQ/GenomeDir_ensembl/ \
+       --readFilesIn $fqFile \
+       --readFilesCommand zcat \
+       --outFileNamePrefix ~/RNASeqSQ/mapped_data_ensembl/$(basename $fqFile .fastq.gz)_ensembl_ \
+       --outSAMstrandField intronMotif \
+       --sjdbGTFfile ~/RNASeqSQ/ref_genome_ensembl/Sheep_genome_annotations_ensembl.gtf \
+       --outSAMtype BAM Unsorted \
+       --outSAMunmapped Within \
+       --outFilterIntronMotifs RemoveNoncanonical
+done
+
+###The rest of the analysis will be performed using RSubread locally
+
+
